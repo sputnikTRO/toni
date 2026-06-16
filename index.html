@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TONI</title>
+<meta name="description" content="TONI — No Voltees!. Música y merch oficial.">
+<!-- Favicon (pestaña del navegador, favoritos y resultado de Google) -->
+<link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/assets/favicon-180.png">
+<!-- Open Graph (cómo se ve al compartir en redes/WhatsApp) -->
+<meta property="og:title" content="TONI">
+<meta property="og:description" content="No Voltees! — música y merch oficial.">
+<meta property="og:type" content="website">
+<!-- og:url: dominio final (placeholder; ajustar al real cuando se conecte) -->
+<meta property="og:url" content="https://www.tonimusica.com">
+<meta property="og:image" content="https://www.tonimusica.com/assets/album.jpg">
+<style>
+  :root {
+    --black: #000000;
+    --white: #ffffff;
+    --pad: clamp(20px, 4vw, 48px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* Quita el recuadro/sombra gris que iOS Safari pinta al tocar botones y links */
+  button, a, select { -webkit-tap-highlight-color: transparent; }
+
+  html, body { max-width: 100%; overflow-x: hidden; }
+
+  body {
+    background: var(--white);
+    color: var(--black);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  /* Bloquea el scroll mientras la vista Home está activa (landing a pantalla completa) */
+  body.no-scroll { overflow: hidden; }
+
+  a { color: var(--black); text-decoration: none; }
+
+  button {
+    background: none; border: none; cursor: pointer;
+    color: var(--black); font: inherit; display: inline-flex; align-items: center;
+  }
+
+  img { display: block; max-width: 100%; }
+
+  /* ---------- Views ---------- */
+  .view { display: none; }
+  #shop.active { display: block; }
+
+  /* Fundido suave al activar una vista (cambio menos brusco, estilo inspiración) */
+  #home.active, #shop.active { animation: viewFade 0.35s ease both; }
+  @keyframes viewFade { from { opacity: 0; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    #home.active, #shop.active { animation: none; }
+  }
+
+  /* ---------- HOME / Landing (no scroll) ---------- */
+  #home {
+    position: fixed;
+    inset: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--pad);
+    background: var(--white);
+    z-index: 5;
+  }
+  #home.active { display: flex; }
+
+  .home-nav {
+    position: absolute;
+    top: clamp(28px, 5vh, 56px);
+    left: var(--pad);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .home-nav a {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .home-nav a.current { text-decoration: underline; text-underline-offset: 3px; }
+  .home-nav a:hover { opacity: 0.4; }
+
+  /* Dropdown de navegación de la landing (solo móvil; oculto en desktop) */
+  .home-nav-select { display: none; }
+
+  .album-link {
+    display: block;
+    width: min(80vw, 80svh, 620px);
+  }
+  .album-link img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+
+  /* ---------- SHOP ---------- */
+  .shop-header {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--white);
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 26px var(--pad);
+  }
+  .shop-logo {
+    grid-column: 2;
+    justify-self: center;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 26px;
+    letter-spacing: 0.01em;
+  }
+  .header-left  { grid-column: 1; justify-self: start; }
+  .header-right {
+    grid-column: 3;
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .header-right .icon:hover { opacity: 0.4; }
+  /* Selector de moneda (monocromático, sin chrome del SO; flecha negra propia) */
+  .currency-select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: transparent;
+    border: none;
+    color: var(--black);
+    font: inherit;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 16px 0 0;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none" stroke="black" stroke-width="1.4"><path d="M2 4l4 4 4-4"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: 11px 11px;
+  }
+  .currency-select:focus { outline: none; }
+  .currency-select option { color: var(--black); }
+  /* Variante de bloque para la fila "Currency" del menú */
+  .currency-select--block {
+    width: 100%;
+    font-size: 22px;
+    background-size: 13px 13px;
+  }
+
+  /* Grid de productos: centrado y "no estirado" con un solo item,
+     listo para agregar más productos sin romper el layout. */
+  .shop-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(28px, 4vw, 64px) clamp(24px, 3vw, 48px);
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(36px, 6vh, 72px) var(--pad) clamp(48px, 8vh, 80px);
+  }
+  .product {
+    display: block;
+    flex: 0 1 300px;     /* base fija: el item no se estira de ancho completo */
+    max-width: 340px;
+  }
+  .product:hover { opacity: 0.7; }
+  /* Al pasar el cursor (desktop) o tocar/presionar (móvil) el producto,
+     se subraya el título con línea negra. */
+  .product:hover .product-name,
+  .product:active .product-name,
+  .product:focus-visible .product-name {
+    text-decoration: underline;
+    text-decoration-color: var(--black);
+    text-underline-offset: 3px;
+  }
+  .product img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+  }
+  .product-name { margin-top: 16px; font-size: 15px; font-weight: 700; }
+  .product-price { font-size: 15px; margin-top: 2px; }
+  /* Nota de honestidad para precios en USD (referenciales) */
+  .product-fx-note { font-size: 11px; margin-top: 6px; opacity: 0.6; max-width: 240px; }
+  /* Elementos de confianza junto al producto */
+  .product-secure { font-size: 12px; margin-top: 8px; opacity: 0.6; }
+  .product-shipping { font-size: 12px; margin-top: 4px; opacity: 0.6; }
+
+  /* ---------- Footer (solo Shop) ---------- */
+  .shop-footer {
+    border-top: 1px solid var(--black);
+    padding: clamp(36px, 6vh, 56px) var(--pad);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    text-align: center;
+  }
+  .footer-socials {
+    display: flex;
+    gap: 22px;
+    align-items: center;
+  }
+  .footer-socials a { display: inline-flex; }
+  .footer-socials a:hover { opacity: 0.4; }
+  .footer-socials svg { width: 22px; height: 22px; }
+  .footer-copy { font-size: 13px; }
+  .footer-contact { font-size: 13px; }
+  .footer-contact a { text-decoration: underline; text-underline-offset: 2px; }
+  .footer-contact a:hover { opacity: 0.4; }
+
+  /* ---------- Menú inline (empuja el contenido hacia abajo) ---------- */
+  /* Panel colapsable: anima la altura (max-height) y empuja los productos hacia
+     abajo al abrir; al cerrar, regresan a su posición. */
+  .shop-menu {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.4s ease;
+  }
+  #shop.menu-open .shop-menu { max-height: 480px; }
+
+  /* El botón del header muestra ☰ cuando está cerrado y ✕ cuando está abierto */
+  .menu-toggle .icon-close { display: none; }
+  #shop.menu-open .menu-toggle .icon-open  { display: none; }
+  #shop.menu-open .menu-toggle .icon-close { display: block; }
+
+  .menu-links {
+    padding: 0 var(--pad);
+    margin-top: 8px;
+  }
+  .menu-links a {
+    display: block;
+    font-size: clamp(22px, 3vw, 30px);
+    padding: 22px 0;
+    border-bottom: 1px solid var(--black);
+  }
+  .menu-links a:first-child { border-top: 1px solid var(--black); }
+  .menu-links a:hover { opacity: 0.4; }
+
+  .menu-currency {
+    padding: 26px var(--pad) 0;
+  }
+  .menu-currency .label {
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .menu-currency .value {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--black);
+    padding: 14px 0;
+    font-size: 22px;
+  }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 640px) {
+    .album-link { width: min(88vw, 70svh); }
+
+    /* Landing móvil: oculta el nav apilado y muestra el dropdown "Home ▾"
+       (igual que la inspiración): label a la izquierda, flecha a la derecha. */
+    .home-nav { display: none; }
+    .home-nav-select {
+      display: block;
+      position: absolute;
+      top: clamp(28px, 5vh, 56px);
+      left: 0;
+      width: 100%;
+      padding: 0 var(--pad);
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-color: transparent;
+      border: none;
+      color: var(--black);
+      font: inherit;
+      font-size: 15px;
+      line-height: 1.6;
+      cursor: pointer;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="none" stroke="black" stroke-width="1.4"><path d="M2 4l4 4 4-4"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right var(--pad) center;
+      background-size: 13px 13px;
+    }
+    .home-nav-select:focus { outline: none; }
+
+    /* Shop como columna a toda la altura: el contenido empuja el footer
+       SIEMPRE hasta el fondo de la pantalla (sticky footer). */
+    #shop.active {
+      display: flex;
+      flex-direction: column;
+      min-height: 100svh;
+    }
+    /* El grid crece y ocupa el espacio sobrante para que el footer baje. */
+    .shop-grid {
+      flex: 1 0 auto;
+      padding: clamp(20px, 5vh, 32px) var(--pad) clamp(28px, 5vh, 40px);
+    }
+    /* Producto a ancho completo (1 columna): imagen grande y protagónica,
+       cuadrada, con ~20px de padding lateral (heredado de --pad). */
+    .product { flex: 1 1 100%; max-width: none; }
+    /* El footer no crece: queda pegado al fondo gracias al grid flexible. */
+    .shop-footer { flex: 0 0 auto; }
+  }
+
+  /* ---------- Desktop: ajuste fino de la landing (NO afecta móvil) ----------
+     Iguala la proporción de la página de inspiración: portada y nav un poco
+     más compactos que el default. El móvil (≤640px) queda intacto. */
+  @media (min-width: 641px) {
+    /* Portada más chica (antes min(80vw,80svh,620px)). */
+    .album-link { width: min(72vw, 62svh, 560px); }
+    /* Nav Home/Shop más pequeño (antes 15px). */
+    .home-nav a { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ HOME / LANDING ============ -->
+<div id="home" class="view active" data-screen-label="Home">
+  <!-- Desktop: nav apilado (Home / Shop) -->
+  <nav class="home-nav">
+    <a href="#" class="current" data-view="home">Home</a>
+    <a href="#" data-view="shop">Shop</a>
+  </nav>
+  <!-- Móvil: dropdown "Home ▾" que abre el selector de navegación (como la inspiración) -->
+  <select class="home-nav-select" aria-label="Navegación">
+    <option value="home">Home</option>
+    <option value="shop">Shop</option>
+  </select>
+
+  <!-- Portada del álbum: clickeable -> abre STREAMING_LINK en pestaña nueva.
+       Reemplaza assets/album.jpg por la portada real de "No Voltees!". -->
+  <a class="album-link" id="album-link" href="#" target="_blank" rel="noopener">
+    <img src="assets/album.jpg" alt="No Voltees! — TONI" width="620" height="620">
+  </a>
+</div>
+
+<!-- ============ SHOP ============ -->
+<div id="shop" class="view" data-screen-label="Shop">
+  <header class="shop-header">
+    <div class="header-left">
+      <button class="menu-toggle" aria-label="Menú" aria-expanded="false">
+        <svg class="icon-open" width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.5">
+          <line x1="3" y1="8" x2="23" y2="8"/><line x1="3" y1="13" x2="23" y2="13"/><line x1="3" y1="18" x2="23" y2="18"/>
+        </svg>
+        <svg class="icon-close" width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.5">
+          <line x1="6" y1="6" x2="20" y2="20"/><line x1="20" y1="6" x2="6" y2="20"/>
+        </svg>
+      </button>
+    </div>
+    <a class="shop-logo" href="#" data-view="home">TONI</a>
+    <div class="header-right">
+      <!-- Carrito: abre MERCADOPAGO_LINK en pestaña nueva (no hay carrito propio) -->
+      <a class="icon icon-cart" id="cart-link" href="#" rel="noopener" aria-label="Comprar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+      </a>
+      <select class="currency-select" aria-label="Moneda">
+        <option value="MXN">MXN</option>
+        <option value="USD">USD</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Panel de menú inline: se despliega bajo el header y empuja los productos
+       hacia abajo; al cerrar (✕), regresan a su posición (como la inspiración). -->
+  <div class="shop-menu" id="menu">
+    <div class="shop-menu-inner">
+      <nav class="menu-links">
+        <a href="#" data-view="home">Home</a>
+        <a href="#" data-view="shop">Shop</a>
+      </nav>
+      <div class="menu-currency">
+        <p class="label">Currency</p>
+        <div class="value">
+          <select class="currency-select currency-select--block" aria-label="Moneda">
+            <option value="MXN">MXN</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="shop-grid">
+    <!-- ÚNICO producto por ahora. Clic -> abre MERCADOPAGO_LINK en la misma pestaña.
+         Para agregar más productos, duplica este bloque <a class="product">…</a>.
+         Reemplaza assets/cd.jpg, el nombre y el precio (CD_PRICE_MXN). -->
+    <a class="product product-buy" href="#" rel="noopener">
+      <img src="assets/cd.jpg" alt="CD — No Voltees! — TONI" width="340" height="340">
+      <p class="product-name">CD — No Voltees!</p>
+      <p class="product-price" data-cd-price><!-- precio renderizado por JS --></p>
+      <p class="product-fx-note" hidden>Precios en USD son referenciales. El cobro se procesa en MXN.</p>
+      <p class="product-secure">Pago seguro vía Mercado Pago</p>
+      <p class="product-shipping">Envíos a todo México · 3-5 días hábiles</p>
+    </a>
+  </div>
+
+  <!-- ============ FOOTER (solo Shop) ============ -->
+  <footer class="shop-footer">
+    <div class="footer-socials">
+      <a id="social-instagram" href="#" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a id="social-youtube" href="#" target="_blank" rel="noopener" aria-label="YouTube">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 12c0-1.7-.2-3.4-.2-3.4s-.2-1.4-.8-2c-.8-.8-1.6-.8-2-.9C17.2 5.5 12 5.5 12 5.5s-5.2 0-8 .2c-.4.1-1.2.1-2 .9-.6.6-.8 2-.8 2S1 10.3 1 12v1.7c0 1.7.2 3.4.2 3.4s.2 1.4.8 2c.8.8 1.8.8 2.3.9 1.7.2 7.7.2 7.7.2s5.2 0 8-.2c.4-.1 1.2-.1 2-.9.6-.6.8-2 .8-2s.2-1.7.2-3.4V12zM9.8 15.5v-6l5.2 3-5.2 3z"/></svg>
+      </a>
+    </div>
+    <p class="footer-copy">© 2026 TONI</p>
+    <!-- Email de contacto (mailto) -> CONTACT_EMAIL -->
+    <p class="footer-contact">¿Dudas? <a id="contact-link" href="#">Escríbenos</a>.</p>
+  </footer>
+</div>
+
+<script>
+  /* =====================================================================
+     CONFIGURACIÓN EDITABLE — el dueño cambia SOLO estas constantes.
+     ===================================================================== */
+
+  // Link al álbum "No Voltees!" en plataformas de streaming.
+  // Se obtiene de la página de distribución del álbum (smart link).
+  const STREAMING_LINK   = "PEGAR_LINK_STREAMING_DE_TONI";
+
+  // Link de pago REUTILIZABLE de Mercado Pago (formato mpago.la/...).
+  // Se genera dentro de la app de Mercado Pago:
+  // "Herramientas para vender" -> "Link de pago" -> crear link del CD y pegarlo aquí.
+  const MERCADOPAGO_LINK = "PEGAR_LINK_MERCADOPAGO_DE_TONI";
+
+  // Precio del CD en pesos mexicanos (número, sin símbolo). Definir luego.
+  const CD_PRICE_MXN     = 0;
+
+  // Tasa de respaldo MXN -> USD (cuántos USD vale 1 MXN). Se usa solo si falla
+  // la consulta de tipo de cambio en vivo. Ajústala si el respaldo queda viejo.
+  const FALLBACK_MXN_USD = 0.055;
+
+  // Correo de contacto que se muestra en el footer (mailto). Cámbialo por el real.
+  const CONTACT_EMAIL    = "PEGAR_CORREO_DE_TONI";
+
+  // URLs de redes sociales. Reemplaza por el perfil real.
+  // (Se obtienen abriendo cada perfil y copiando la URL del navegador.)
+  const SOCIALS = {
+    instagram: "PEGAR_INSTAGRAM_DE_TONI",
+    youtube:   "PEGAR_YOUTUBE_DE_TONI"
+  };
+
+  /* =====================================================================
+     Aplica la configuración al DOM (no es necesario editar debajo).
+     ===================================================================== */
+
+  // Home: portada -> streaming
+  document.getElementById('album-link').href = STREAMING_LINK;
+
+  // Compra: producto (CD) + íconos de carrito -> EXCLUSIVAMENTE Mercado Pago.
+  // Navega en la MISMA pestaña (window.location.href), NO target="_blank": en
+  // Safari iOS abrir el checkout en pestaña nueva dispara el aviso "abrir otra app".
+  // Si MERCADOPAGO_LINK sigue sin configurarse, avisa en vez de abrir página rota.
+  const MP_LISTO = MERCADOPAGO_LINK && MERCADOPAGO_LINK !== "PEGAR_LINK_MERCADOPAGO_DE_TONI";
+
+  // Handler único y aislado del checkout. preventDefault + stopPropagation evitan
+  // que el clic se propague a cualquier otro listener (no debe abrir el streaming).
+  function irACheckout(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (MP_LISTO) {
+      window.location.href = MERCADOPAGO_LINK;   // checkout de Mercado Pago, misma pestaña
+    } else {
+      alert('La compra estará disponible muy pronto. ¡Gracias por tu interés!');
+    }
+  }
+
+  document.querySelectorAll('.product-buy, #cart-link, #cart-link-menu').forEach(el => {
+    el.removeAttribute('target');                // misma pestaña (no pestaña nueva)
+    el.removeAttribute('data-view');             // por si acaso: nunca cambia de vista
+    if (MP_LISTO) el.href = MERCADOPAGO_LINK;    // href real (copiar enlace / accesibilidad)
+    el.addEventListener('click', irACheckout);
+  });
+
+  // El STREAMING_LINK SOLO se abre desde la portada del álbum (vista Home).
+  // Es un anchor nativo con target="_blank"; no lleva ningún handler de JS extra.
+
+  // Contacto -> mailto
+  const contact = document.getElementById('contact-link');
+  contact.href = 'mailto:' + CONTACT_EMAIL;
+
+  // Redes -> SOCIALS
+  document.getElementById('social-instagram').href = SOCIALS.instagram;
+  document.getElementById('social-youtube').href   = SOCIALS.youtube;
+
+  /* =====================================================================
+     Precios y selector de moneda (MXN / USD).
+     - El precio base de cada producto vive en MXN (data-mxn).
+     - USD se calcula con tipo de cambio en vivo (open.er-api.com) y, si falla,
+       con FALLBACK_MXN_USD. El cobro real SIEMPRE es en MXN (Mercado Pago).
+     ===================================================================== */
+
+  // Marca el precio base en MXN sobre el elemento del producto.
+  document.querySelectorAll('[data-cd-price]').forEach(el => {
+    el.dataset.mxn = CD_PRICE_MXN;
+  });
+
+  let currentCurrency = 'MXN';
+  let mxnToUsd = FALLBACK_MXN_USD;          // se actualiza con la tasa en vivo
+  const currencySelects = document.querySelectorAll('.currency-select');
+  const fxNotes = document.querySelectorAll('.product-fx-note');
+
+  function formatPrice(mxn) {
+    if (currentCurrency === 'USD') {
+      return '$' + (mxn * mxnToUsd).toFixed(2) + ' USD';   // ej. "$31.90 USD"
+    }
+    return '$' + Math.round(mxn).toLocaleString('es-MX') + ' MXN';  // ej. "$200 MXN"
+  }
+
+  function renderPrices() {
+    document.querySelectorAll('.product-price[data-mxn]').forEach(el => {
+      el.textContent = formatPrice(Number(el.dataset.mxn));
+    });
+    // Nota de honestidad: solo visible cuando se muestran precios en USD.
+    fxNotes.forEach(n => { n.hidden = currentCurrency !== 'USD'; });
+  }
+
+  function setCurrency(code) {
+    currentCurrency = (code === 'USD') ? 'USD' : 'MXN';
+    currencySelects.forEach(s => { s.value = currentCurrency; });  // mantiene todos en sync
+    renderPrices();
+  }
+
+  currencySelects.forEach(s => {
+    s.value = 'MXN';                                   // default
+    s.addEventListener('change', () => setCurrency(s.value));
+  });
+
+  renderPrices();   // pinta el precio inicial en MXN
+
+  // Tipo de cambio en vivo: 1 MXN = rates.USD. Si falla, se queda el respaldo.
+  fetch('https://open.er-api.com/v6/latest/MXN')
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.rates && typeof data.rates.USD === 'number') {
+        mxnToUsd = data.rates.USD;
+        if (currentCurrency === 'USD') renderPrices();   // refresca si ya estaba en USD
+      }
+    })
+    .catch(() => { /* se mantiene FALLBACK_MXN_USD */ });
+
+  /* =====================================================================
+     Cambio de vista (Home <-> Shop) sin recargar.
+     ===================================================================== */
+  const shopEl = document.getElementById('shop');
+  const menuToggle = document.querySelector('.menu-toggle');
+
+  // Abre/cierra el panel de menú inline (empuja los productos hacia abajo).
+  function setMenu(open) {
+    shopEl.classList.toggle('menu-open', open);
+    menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    const target = document.getElementById(name);
+    if (target) target.classList.add('active');
+    setMenu(false);   // cierra el panel al cambiar de vista
+    // En Home se bloquea el scroll (landing a pantalla completa); en Shop se permite.
+    document.body.classList.toggle('no-scroll', name === 'home');
+    // Mantén el dropdown de la landing reflejando la vista actual.
+    const hns = document.querySelector('.home-nav-select');
+    if (hns) hns.value = (name === 'home') ? 'home' : 'shop';
+    window.scrollTo(0, 0);
+  }
+
+  document.querySelectorAll('[data-view]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      showView(el.dataset.view);
+    });
+  });
+
+  // Dropdown de navegación de la landing (móvil): al elegir, cambia de vista.
+  // Pequeño retraso para que el selector nativo de iOS termine de cerrarse antes
+  // del cambio de vista; junto con el fundido (viewFade) la transición no se
+  // siente brusca/jumpy (como en la inspiración).
+  const homeNavSelect = document.querySelector('.home-nav-select');
+  homeNavSelect.addEventListener('change', () => {
+    const destino = homeNavSelect.value;
+    setTimeout(() => showView(destino), 260);
+  });
+
+  // El botón ☰/✕ alterna el panel inline.
+  menuToggle.addEventListener('click', () => setMenu(!shopEl.classList.contains('menu-open')));
+
+  // Estado inicial: Home activo -> scroll bloqueado.
+  document.body.classList.add('no-scroll');
+</script>
+
+</body>
+</html>
